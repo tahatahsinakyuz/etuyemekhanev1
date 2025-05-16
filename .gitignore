@@ -1,0 +1,7 @@
+# Node.js
+node_modules/
+
+# Ortak gizli dosyalar
+.env
+*.env
+.DS_Store
