@@ -1,20 +1,22 @@
 # Node image ile başla
 FROM node:18
 
-# Çalışma dizinini oluştur ve /app olarak ayarla
+# Çalışma dizinini ayarla
 WORKDIR /app
 
-# Sadece package dosyalarını backend'den al
+# package.json ve package-lock.json dosyalarını kopyala
 COPY vscode/backend/package*.json ./
 
-# Bağımlılıkları yükle
-RUN npm install
+# Tüm backend içeriğini ve frontend'i KOPYALA
+COPY vscode/backend/. ./
 
-# backend'deki tüm dosyaları /app içine kopyala
-COPY vscode/backend/ .
+# NOT: Yukarıdaki satır backend'in içindeki her şeyi /app dizinine atar.
+
+# Modülleri yükle
+RUN npm install
 
 # Portu aç
 EXPOSE 3000
 
-# Uygulamayı başlat
+# Projeyi başlat
 CMD ["npm", "start"]
