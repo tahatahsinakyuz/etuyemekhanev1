@@ -10,7 +10,11 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 require('dotenv').config();
-
+const frontendPath = path.resolve(__dirname, '../frontend');
+app.use(express.static(frontendPath));
+app.get('/', (req, res) => {
+    res.sendFile(path.join(frontendPath, 'index.html'));
+});
 const dbConfig = {
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -750,6 +754,4 @@ app.post('/api/yorum-begeni', async (req, res) => {
 app.get('/api/', (req, res) => {
     res.json({ success: true, message: "API çalışıyor!" });
 });
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/index.html'));
-});
+
