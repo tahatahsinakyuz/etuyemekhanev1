@@ -11,7 +11,7 @@ COPY vscode/backend/package*.json ./
 RUN npm install
 
 # Backend ve frontend dahil tüm dosyaları kopyala
-COPY vscode/backend/ .
+COPY vscode/backend/frontend ./vscode/backend/frontend
 
 # Port aç
 EXPOSE 3000
