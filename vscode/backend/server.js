@@ -10,8 +10,8 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'frontend')));
 
 require('dotenv').config();
-const frontendPath = path.resolve(__dirname, '../frontend');
-app.use(express.static(frontendPath));
+//const frontendPath = path.resolve(__dirname, '../frontend');
+//app.use(express.static(frontendPath));
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'frontend/index.html'));
 });
