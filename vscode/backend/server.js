@@ -7,14 +7,15 @@ const path = require('path');
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, '../frontend')));
+app.use(express.static(path.join(__dirname, 'frontend')));
 
 require('dotenv').config();
 const frontendPath = path.resolve(__dirname, '../frontend');
 app.use(express.static(frontendPath));
 app.get('/', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'index.html'));
+    res.sendFile(path.join(__dirname, 'frontend/index.html'));
 });
+
 const dbConfig = {
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
