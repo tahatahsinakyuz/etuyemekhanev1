@@ -3,48 +3,23 @@ const mysql = require('mysql2/promise');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
+require('dotenv').config();
 
 const app = express();
+
+// GÜVENLİK: Cors ve body parser
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'frontend')));
 
-require('dotenv').config();
+// **ÖNEMLİ:** Frontend yolunu mutlak olarak ayarla
 const frontendPath = path.join(__dirname, 'frontend');
+console.log("Frontend dizin yolu: ", frontendPath);
 app.use(express.static(frontendPath));
 
+// Root path isteği: index.html döndür
 app.get('/', (req, res) => {
     res.sendFile(path.join(frontendPath, 'index.html'));
 });
-
-const dbConfig = {
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    timezone: process.env.DB_TIMEZONE
-};
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Sunucu çalışıyor: http://0.0.0.0:${PORT}`);
-});
-
-
-let db; // Global bağlantı değişkeni
-
-async function connectToDatabase() {
-    if (!db) {
-        try {
-            db = await mysql.createConnection(dbConfig);
-            console.log('Veritabanına bağlandı.');
-        } catch (error) {
-            console.error('Veritabanına bağlanırken hata oluştu:', error);
-            throw error;
-        }
-    }
-    return db;
-}
 
 // Admin kontrol middleware
 async function adminMiddleware(req, res, next) {
@@ -757,3 +732,32 @@ app.get('/api/', (req, res) => {
     res.json({ success: true, message: "API çalışıyor!" });
 });
 
+// --- Veritabanı Bağlantısı Ayarı ---
+const dbConfig = {
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    timezone: process.env.DB_TIMEZONE || "+03:00"
+};
+
+let db; // Global bağlantı değişkeni
+
+async function connectToDatabase() {
+    if (!db) {
+        try {
+            db = await mysql.createConnection(dbConfig);
+            console.log('Veritabanına bağlandı.');
+        } catch (error) {
+            console.error('Veritabanına bağlanırken hata oluştu:', error);
+            throw error;
+        }
+    }
+    return db;
+}
+
+// --- SUNUCU BAŞLATMA ---
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Sunucu çalışıyor: http://0.0.0.0:${PORT}`);
+});
