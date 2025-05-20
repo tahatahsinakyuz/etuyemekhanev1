@@ -255,3 +255,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function navigateTo(url) {
     window.location.href = url;
 }
+function navigateTo(url) {
+    window.location.href = url;
+}
+window.navigateTo = navigateTo;
