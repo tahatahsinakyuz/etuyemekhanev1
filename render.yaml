@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: etuyemekhane-backend
+    env: node
+    plan: free
+    buildCommand: cd vscode/backend && npm install
+    startCommand: cd vscode/backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Buraya DB bağlantı bilgilerini ekleyeceğiz (sonra)
