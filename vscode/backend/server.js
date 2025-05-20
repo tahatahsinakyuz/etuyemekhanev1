@@ -12,7 +12,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // **ÖNEMLİ:** Frontend yolunu mutlak olarak ayarla
-const frontendPath = path.join(__dirname, 'vscode', 'backend', 'frontend');
+const frontendPath = path.join(__dirname, 'frontend');
 console.log("Frontend dizin yolu: ", frontendPath);
 app.use(express.static(frontendPath));
 
