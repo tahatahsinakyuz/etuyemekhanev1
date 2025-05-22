@@ -1,4 +1,5 @@
-import { API_URL } from "./config.js";
+// API URL'yi window üzerinden al
+const API_URL = window.API_URL;
 
 // Günün Menüsü Verisini Çek ve Göster
 async function loadTodayMenu() {
@@ -159,7 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const yetkiliButton = document.getElementById("yetkiliButton");
     if (yetkiliButton) {
         yetkiliButton.addEventListener("click", () => {
-            navigateTo("admin-giris.html");
+            window.navigateTo("admin-giris.html");
         });
     }
 
@@ -252,8 +253,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadComments();
 });
 
-
-function navigateTo(url) {
+// Tüm butonlar için kullanılacak navigateTo fonksiyonu
+window.navigateTo = function(url) {
     window.location.href = url;
-}
-window.navigateTo = navigateTo;
+};
