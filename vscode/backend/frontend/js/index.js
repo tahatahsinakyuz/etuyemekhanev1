@@ -1,7 +1,7 @@
 // API URL'yi window üzerinden al
 const API_URL = window.API_URL;
 
-// Günün Menüsü Verisini Çek ve Göster
+// Menüleri Yükle
 async function loadTodayMenu() {
     try {
         const response = await fetch(`${API_URL}/api/gunun-menusu`);
@@ -9,44 +9,47 @@ async function loadTodayMenu() {
 
         if (data.success && data.menu) {
             const gununMenusu = document.getElementById("gunun-menusu");
-            gununMenusu.innerHTML = "";
+            if (gununMenusu) {
+                gununMenusu.innerHTML = "";
 
-            const { corba, anaYemek, yardimciYemek, ekstra, corba_gramaj, corba_kalori, anaYemek_gramaj, anaYemek_kalori, yardimciYemek_gramaj, yardimciYemek_kalori, ekstra_gramaj, ekstra_kalori } = data.menu;
+                const { corba, anaYemek, yardimciYemek, ekstra, corba_gramaj, corba_kalori, anaYemek_gramaj, anaYemek_kalori, yardimciYemek_gramaj, yardimciYemek_kalori, ekstra_gramaj, ekstra_kalori } = data.menu;
 
-            const gridHTML = `
-                <div class="menu-item">
-                    <img src="images/corba.png" alt="Çorba Resmi">
-                    <p>${corba}</p>
-                    <p>${corba_gramaj}g - ${corba_kalori} kcal</p>
-                </div>
-                <div class="menu-item">
-                    <img src="images/ana-yemek.png" alt="Ana Yemek Resmi">
-                    <p>${anaYemek}</p>
-                    <p>${anaYemek_gramaj}g - ${anaYemek_kalori} kcal</p>
-                </div>
-                <div class="menu-item">
-                    <img src="images/yardimci-yemek.png" alt="Yardımcı Yemek Resmi">
-                    <p>${yardimciYemek}</p>
-                    <p>${yardimciYemek_gramaj}g - ${yardimciYemek_kalori} kcal</p>
-                </div>
-                <div class="menu-item">
-                    <img src="images/ekstra.png" alt="Ekstra Resmi">
-                    <p>${ekstra}</p>
-                    <p>${ekstra_gramaj}g - ${ekstra_kalori} kcal</p>
-                </div>
-            `;
+                const gridHTML = `
+                    <div class="menu-item">
+                        <img src="images/corba.png" alt="Çorba Resmi">
+                        <p>${corba}</p>
+                        <p>${corba_gramaj}g - ${corba_kalori} kcal</p>
+                    </div>
+                    <div class="menu-item">
+                        <img src="images/ana-yemek.png" alt="Ana Yemek Resmi">
+                        <p>${anaYemek}</p>
+                        <p>${anaYemek_gramaj}g - ${anaYemek_kalori} kcal</p>
+                    </div>
+                    <div class="menu-item">
+                        <img src="images/yardimci-yemek.png" alt="Yardımcı Yemek Resmi">
+                        <p>${yardimciYemek}</p>
+                        <p>${yardimciYemek_gramaj}g - ${yardimciYemek_kalori} kcal</p>
+                    </div>
+                    <div class="menu-item">
+                        <img src="images/ekstra.png" alt="Ekstra Resmi">
+                        <p>${ekstra}</p>
+                        <p>${ekstra_gramaj}g - ${ekstra_kalori} kcal</p>
+                    </div>
+                `;
 
-            gununMenusu.innerHTML = gridHTML;
+                gununMenusu.innerHTML = gridHTML;
+            }
         } else {
-            document.getElementById("gunun-menusu").innerHTML = "<p>Günün menüsü bulunamadı.</p>";
+            const gununMenusu = document.getElementById("gunun-menusu");
+            if (gununMenusu) gununMenusu.innerHTML = "<p>Günün menüsü bulunamadı.</p>";
         }
     } catch (error) {
         console.error("Günün menüsü yüklenirken hata:", error);
-        document.getElementById("gunun-menusu").innerHTML = "<p>Menü yüklenirken bir hata oluştu.</p>";
+        const gununMenusu = document.getElementById("gunun-menusu");
+        if (gununMenusu) gununMenusu.innerHTML = "<p>Menü yüklenirken bir hata oluştu.</p>";
     }
 }
 
-// İlerleyen Günler Verisini Çek ve Göster
 async function loadUpcomingMenus() {
     try {
         const response = await fetch(`${API_URL}/api/ilerleyen-gunler`);
@@ -54,37 +57,42 @@ async function loadUpcomingMenus() {
 
         if (data.success && Array.isArray(data.menu)) {
             const ilerleyenGunler = document.getElementById("ilerleyen-gunler");
-            ilerleyenGunler.innerHTML = "";
+            if (ilerleyenGunler) {
+                ilerleyenGunler.innerHTML = "";
 
-            data.menu.forEach((menu) => {
-                const tarih = new Date(menu.tarih);
-                const gun = tarih.toLocaleDateString("tr-TR", { weekday: "long" });
+                data.menu.forEach((menu) => {
+                    const tarih = new Date(menu.tarih);
+                    const gun = tarih.toLocaleDateString("tr-TR", { weekday: "long" });
 
-                const dayCard = document.createElement("div");
-                dayCard.className = "day-card";
-                dayCard.innerHTML = `
-                    <h3>${menu.tarih.split("T")[0]} (${gun})</h3>
-                    <p>${menu.corba}</p>
-                    <p>${menu.anaYemek}</p>
-                    <p>${menu.yardimciYemek}</p>
-                    <p>${menu.ekstra}</p>
-                `;
-                ilerleyenGunler.appendChild(dayCard);
-            });
+                    const dayCard = document.createElement("div");
+                    dayCard.className = "day-card";
+                    dayCard.innerHTML = `
+                        <h3>${menu.tarih.split("T")[0]} (${gun})</h3>
+                        <p>${menu.corba}</p>
+                        <p>${menu.anaYemek}</p>
+                        <p>${menu.yardimciYemek}</p>
+                        <p>${menu.ekstra}</p>
+                    `;
+                    ilerleyenGunler.appendChild(dayCard);
+                });
+            }
         } else {
-            document.getElementById("ilerleyen-gunler").innerHTML = "<p>İlerleyen günler için menü bulunamadı.</p>";
+            const ilerleyenGunler = document.getElementById("ilerleyen-gunler");
+            if (ilerleyenGunler) ilerleyenGunler.innerHTML = "<p>İlerleyen günler için menü bulunamadı.</p>";
         }
     } catch (error) {
         console.error("İlerleyen günler yüklenirken hata:", error);
-        document.getElementById("ilerleyen-gunler").innerHTML = "<p>Menü yüklenirken bir hata oluştu.</p>";
+        const ilerleyenGunler = document.getElementById("ilerleyen-gunler");
+        if (ilerleyenGunler) ilerleyenGunler.innerHTML = "<p>Menü yüklenirken bir hata oluştu.</p>";
     }
 }
 
 // Yorumlar kısmı
 async function loadComments() {
     const commentList = document.getElementById("comment-list");
+    if (!commentList) return;
     try {
-        const response = await fetch(`${API_URL}/yorumlar`);
+        const response = await fetch(`${API_URL}/api/yorumlar`);
         const data = await response.json();
 
         if (data.success) {
@@ -121,7 +129,7 @@ async function loadComments() {
 
 async function handleLikeDislike(yorumId, action) {
     try {
-        const response = await fetch(`${API_URL}/yorum-begeni`, {
+        const response = await fetch(`${API_URL}/api/yorum-begeni`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ yorumId, action })
@@ -139,6 +147,7 @@ async function handleLikeDislike(yorumId, action) {
     }
 }
 
+// Kullanıcı doğrulama için
 function resetVerification(nameInput, commentInput, commentForm, emailInput) {
     nameInput.disabled = true;
     commentInput.disabled = true;
@@ -151,109 +160,114 @@ function resetVerification(nameInput, commentInput, commentForm, emailInput) {
     commentInput.classList.remove("verified");
 }
 
+// DOMContentLoaded
 document.addEventListener("DOMContentLoaded", () => {
-    // Günün Menüsü ve İlerleyen Günler
+    // Menüleri yükle
     loadTodayMenu();
     loadUpcomingMenus();
 
-    // Yetkili İşlemleri Butonu
+    // Yetkili butonu
     const yetkiliButton = document.getElementById("yetkiliButton");
     if (yetkiliButton) {
         yetkiliButton.addEventListener("click", () => {
-            window.navigateTo("admin-giris.html");
+            navigateTo("admin-giris.html");
         });
     }
 
-    // Yorumlar ve kullanıcı doğrulama
+    // Yorum formu ve kullanıcı doğrulama
     const commentForm = document.getElementById("comment-form");
     const nameInput = document.getElementById("name");
     const emailInput = document.getElementById("email");
     const commentInput = document.getElementById("comment");
-    const verifyStatus = document.createElement("p");
-    verifyStatus.id = "verify-status";
-    commentForm.insertBefore(verifyStatus, commentForm.firstChild);
 
-    let isUserVerified = false;
+    if (commentForm && nameInput && emailInput && commentInput) {
+        const verifyStatus = document.createElement("p");
+        verifyStatus.id = "verify-status";
+        commentForm.insertBefore(verifyStatus, commentForm.firstChild);
 
-    emailInput.addEventListener("blur", async () => {
-        const email = emailInput.value.trim();
-        if (email) {
-            try {
-                const response = await fetch(`${API_URL}/kullanicilar`);
-                const data = await response.json();
+        let isUserVerified = false;
 
-                if (data.success) {
-                    const userExists = data.users.some(user => user.email === email);
-                    if (userExists) {
-                        isUserVerified = true;
-                        verifyStatus.textContent = "Kullanıcı doğrulandı ✅";
-                        verifyStatus.style.color = "green";
-                        nameInput.disabled = false;
-                        commentInput.disabled = false;
-                        commentForm.querySelector("button").disabled = false;
+        emailInput.addEventListener("blur", async () => {
+            const email = emailInput.value.trim();
+            if (email) {
+                try {
+                    const response = await fetch(`${API_URL}/api/kullanicilar`);
+                    const data = await response.json();
 
-                        document.querySelectorAll(".like-button, .dislike-button").forEach(button => {
-                            button.disabled = false;
-                        });
-                        emailInput.classList.add("verified");
-                        nameInput.classList.add("verified");
-                        commentInput.classList.add("verified");
-                    } else {
-                        resetVerification(nameInput, commentInput, commentForm, emailInput);
-                        verifyStatus.textContent = "Kullanıcı bulunamadı ❌";
-                        verifyStatus.style.color = "red";
+                    if (data.success) {
+                        const userExists = data.users.some(user => user.email === email);
+                        if (userExists) {
+                            isUserVerified = true;
+                            verifyStatus.textContent = "Kullanıcı doğrulandı ✅";
+                            verifyStatus.style.color = "green";
+                            nameInput.disabled = false;
+                            commentInput.disabled = false;
+                            commentForm.querySelector("button").disabled = false;
+
+                            document.querySelectorAll(".like-button, .dislike-button").forEach(button => {
+                                button.disabled = false;
+                            });
+                            emailInput.classList.add("verified");
+                            nameInput.classList.add("verified");
+                            commentInput.classList.add("verified");
+                        } else {
+                            resetVerification(nameInput, commentInput, commentForm, emailInput);
+                            verifyStatus.textContent = "Kullanıcı bulunamadı ❌";
+                            verifyStatus.style.color = "red";
+                        }
                     }
+                } catch (error) {
+                    console.error("Kullanıcı doğrulama hatası:", error);
+                    resetVerification(nameInput, commentInput, commentForm, emailInput);
+                    verifyStatus.textContent = "Doğrulama sırasında bir hata oluştu!";
+                    verifyStatus.style.color = "red";
+                }
+            }
+        });
+
+        commentForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const isim = nameInput.value.trim();
+            const eposta = emailInput.value.trim();
+            const yorum = commentInput.value.trim();
+
+            if (!isim || !eposta || !yorum) {
+                alert("Lütfen tüm alanları doldurunuz!");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/yorum-ekle`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ isim, eposta, yorum })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (data.success) {
+                    alert("Yorumunuz başarıyla eklendi!");
+                    commentInput.value = "";
+                    loadComments();
+                } else {
+                    alert("Yorum eklenemedi: " + data.message);
                 }
             } catch (error) {
-                console.error("Kullanıcı doğrulama hatası:", error);
-                resetVerification(nameInput, commentInput, commentForm, emailInput);
-                verifyStatus.textContent = "Doğrulama sırasında bir hata oluştu!";
-                verifyStatus.style.color = "red";
+                console.error("Yorum gönderme hatası:", error);
+                alert("Yorum gönderilirken bir hata oluştu!");
             }
-        }
-    });
-
-    commentForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const isim = nameInput.value.trim();
-        const eposta = emailInput.value.trim();
-        const yorum = commentInput.value.trim();
-
-        if (!isim || !eposta || !yorum) {
-            alert("Lütfen tüm alanları doldurunuz!");
-            return;
-        }
-
-        try {
-            const response = await fetch(`${API_URL}/yorum-ekle`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ isim, eposta, yorum })
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP Error: ${response.status}`);
-            }
-
-            const data = await response.json();
-            if (data.success) {
-                alert("Yorumunuz başarıyla eklendi!");
-                commentInput.value = "";
-                loadComments();
-            } else {
-                alert("Yorum eklenemedi: " + data.message);
-            }
-        } catch (error) {
-            console.error("Yorum gönderme hatası:", error);
-            alert("Yorum gönderilirken bir hata oluştu!");
-        }
-    });
+        });
+    }
 
     // Yorumları baştan yükle
     loadComments();
 });
 
-// Tüm butonlar için kullanılacak navigateTo fonksiyonu
-window.navigateTo = function(url) {
+// Global navigateTo fonksiyonu
+function navigateTo(url) {
     window.location.href = url;
-};
+}
+window.navigateTo = navigateTo;
