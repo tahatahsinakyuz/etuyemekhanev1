@@ -1,4 +1,4 @@
-import { API_URL } from "./config.js";
+const API_URL = window.API_URL;
 
 /* ====================== Genel Navigasyon ve Oturum ====================== */
 // Sayfa Yönlendirme
@@ -9,7 +9,7 @@ function navigateTo(page) {
     }
     window.location.href = page;
 }
-window.navigateTo = navigateTo; // Global erişim
+window.navigateTo = navigateTo;
 
 // Oturum Kontrolü
 function checkSession() {
@@ -23,15 +23,44 @@ function logout() {
     alert("Oturumunuz sonlandırıldı.");
     navigateTo("anasayfa.html");
 }
-window.logout = logout; // Global erişim
+window.logout = logout;
 
+// Sayfa yüklendiğinde bazı eventleri güvenli şekilde bağla
 document.addEventListener("DOMContentLoaded", () => {
-    // Yetkili butonu kontrolü
+    // Yetkili butonu
     const yetkiliButton = document.getElementById("yetkiliButton");
     if (yetkiliButton) {
         yetkiliButton.addEventListener("click", () => {
-            window.location.href = "admin-giris.html";
+            navigateTo("admin-giris.html");
         });
+    }
+
+    // Menü tarih aralığı filtre butonu
+    const listeleBtn = document.getElementById("listeleBtn");
+    if (listeleBtn) {
+        listeleBtn.addEventListener("click", filtreliMenuListele);
+    }
+
+    // Rezervasyon filtre inputları
+    const filterName = document.getElementById("filter-name");
+    const filterDate = document.getElementById("filter-date");
+    const filterMeal = document.getElementById("filter-meal");
+    const clearFilters = document.getElementById("clear-filters");
+
+    if (filterName) filterName.addEventListener("input", updateReservations);
+    if (filterDate) filterDate.addEventListener("input", updateReservations);
+    if (filterMeal) filterMeal.addEventListener("change", updateReservations);
+    if (clearFilters) clearFilters.addEventListener("click", () => {
+        if (filterName) filterName.value = "";
+        if (filterDate) filterDate.value = "";
+        if (filterMeal) filterMeal.value = "";
+        updateReservations();
+    });
+
+    // PDF indirme butonu
+    const downloadReservations = document.getElementById("download-reservations");
+    if (downloadReservations) {
+        downloadReservations.addEventListener("click", downloadReservationsPDF);
     }
 });
 
@@ -71,15 +100,16 @@ async function kullaniciDogrulama(redirectPage) {
         errorMessage.innerText = "Sunucu hatası! Daha sonra tekrar deneyin.";
     }
 }
+window.kullaniciDogrulama = kullaniciDogrulama;
 
 /* ====================== ADMIN PANELİ: Dinamik İçerik ve Menü ====================== */
-
 // Dinamik section gösterme
 function loadDynamicContent(section) {
     document.querySelectorAll('.dynamic-section').forEach(sec => sec.classList.add('hidden'));
     const targetSection = document.getElementById(section);
     if (targetSection) targetSection.classList.remove('hidden');
 }
+window.loadDynamicContent = loadDynamicContent;
 
 // Menü tıklama ve kategoriye yemek ekleme
 document.querySelectorAll('.menu-item').forEach(item => {
@@ -106,99 +136,64 @@ document.querySelectorAll(".kategori ul li").forEach((yemek) => {
     });
 });
 
-// Kategorilere yeni yemek ekleme (ekleme sonrası formdan otomatik ekleme)
-function yeniYemekEkleKategorilere(yemek) {
-    const kategoriler = {
-        corba: document.querySelector(".kategori ul:nth-child(1)"),
-        anaYemek: document.querySelector(".kategori ul:nth-child(2)"),
-        yardimciYemek: document.querySelector(".kategori ul:nth-child(3)"),
-        ekstra: document.querySelector(".kategori ul:nth-child(4)"),
-    };
-    Object.entries(kategoriler).forEach(([kategori, ul]) => {
-        if (ul && yemek[kategori]) {
-            const yeniItem = document.createElement("li");
-            yeniItem.textContent = yemek[kategori];
-            yeniItem.addEventListener("click", () => kategoriYemekSec(kategori, yemek));
-            ul.appendChild(yeniItem);
-        }
-    });
-}
-
-// Form validation (örnek)
-function validateForm(data) {
-    const requiredFields = ['tarih', 'corba', 'anaYemek', 'yardimciYemek', 'ekstra'];
-    return requiredFields.every(field => !!data[field]);
-}
-
 // Yemek ekleme formu
-document.getElementById("yemekEkleForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const yemekVerileri = {
-        tarih: document.getElementById("tarih").value || null,
-        corba: document.getElementById("corba").value || null,
-        corba_gramaj: document.getElementById("corbaPorsiyon").value || null,
-        corba_kalori: document.getElementById("corbaKalori").value || null,
-        anaYemek: document.getElementById("anaYemek").value || null,
-        anaYemek_gramaj: document.getElementById("anaYemekPorsiyon").value || null,
-        anaYemek_kalori: document.getElementById("anaYemekKalori").value || null,
-        yardimciYemek: document.getElementById("yardimciYemek").value || null,
-        yardimciYemek_gramaj: document.getElementById("yardimciYemekPorsiyon").value || null,
-        yardimciYemek_kalori: document.getElementById("yardimciYemekKalori").value || null,
-        ekstra: document.getElementById("ekstra").value || null,
-        ekstra_gramaj: document.getElementById("ekstraPorsiyon").value || null,
-        ekstra_kalori: document.getElementById("ekstraKalori").value || null,
-    };
-    try {
-        const response = await fetch(`${API_URL}/api/yemek-ekle`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(yemekVerileri),
-        });
-        const data = await response.json();
-        if (data.success) {
-            alert("Yemek başarıyla eklendi!");
-            listeleSonEklenenYemekler();
-            yeniYemekEkleKategorilere(yemekVerileri);
-            document.getElementById("yemekEkleForm").reset();
-        } else {
-            alert(data.message || "Yemek eklenemedi.");
+const yemekEkleForm = document.getElementById("yemekEkleForm");
+if (yemekEkleForm) {
+    yemekEkleForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const yemekVerileri = {
+            tarih: document.getElementById("tarih").value || null,
+            corba: document.getElementById("corba").value || null,
+            corba_gramaj: document.getElementById("corbaPorsiyon")?.value || null,
+            corba_kalori: document.getElementById("corbaKalori")?.value || null,
+            anaYemek: document.getElementById("anaYemek").value || null,
+            anaYemek_gramaj: document.getElementById("anaYemekPorsiyon")?.value || null,
+            anaYemek_kalori: document.getElementById("anaYemekKalori")?.value || null,
+            yardimciYemek: document.getElementById("yardimciYemek").value || null,
+            yardimciYemek_gramaj: document.getElementById("yardimciYemekPorsiyon")?.value || null,
+            yardimciYemek_kalori: document.getElementById("yardimciYemekKalori")?.value || null,
+            ekstra: document.getElementById("ekstra").value || null,
+            ekstra_gramaj: document.getElementById("ekstraPorsiyon")?.value || null,
+            ekstra_kalori: document.getElementById("ekstraKalori")?.value || null,
+        };
+        try {
+            const response = await fetch(`${API_URL}/api/yemek-ekle`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(yemekVerileri),
+            });
+            const data = await response.json();
+            if (data.success) {
+                alert("Yemek başarıyla eklendi!");
+                if (typeof listeleSonEklenenYemekler === "function") listeleSonEklenenYemekler();
+                yemekEkleForm.reset();
+            } else {
+                alert(data.message || "Yemek eklenemedi.");
+            }
+        } catch (error) {
+            console.error("Yemek ekleme hatası:", error);
+            alert("Bir hata oluştu!");
         }
-    } catch (error) {
-        console.error("Yemek ekleme hatası:", error);
-        alert("Bir hata oluştu!");
-    }
-});
-
-// Tarih seçici başlatıcı (flatpickr için)
-function initializeDatePicker(selector) {
-    flatpickr(selector, {
-        locale: "tr",
-        dateFormat: "Y-m-d",
     });
 }
-document.addEventListener("DOMContentLoaded", () => {
-    initializeDatePicker("#tarih");
-    initializeDatePicker("#menuTarih");
-});
 
 /* ====================== EKLENEN YEMEKLERİN LİSTESİ ====================== */
-
-// Son eklenen yemekleri listele
 async function listeleSonEklenenYemekler() {
     try {
         const response = await fetch(`${API_URL}/api/son-eklenen-yemekler`);
         const data = await response.json();
         const yemekListesi = document.getElementById("eklenenYemekListesi");
+        if (!yemekListesi) return;
         yemekListesi.innerHTML = "";
-        if (data.success) {
+        if (data.success && Array.isArray(data.sonYemekler)) {
             data.sonYemekler.forEach((menu) => {
                 const listItem = document.createElement("li");
                 listItem.innerHTML = `
-                    <strong>Hangi Tarih İçin:</strong> ${formatDate(menu.tarih)} <br>
-                    <strong>Eklenme Tarihi ve Saati:</strong> ${formatDate(menu.eklenmeTarihi)} ${formatTime(menu.eklenmeTarihi)} <br>
-                    <strong>Çorba:</strong> ${menu.corba}, 
-                    <strong>Ana Yemek:</strong> ${menu.anaYemek}, 
-                    <strong>Yardımcı Yemek:</strong> ${menu.yardimciYemek}, 
+                    <strong>Hangi Tarih İçin:</strong> ${formatDate(menu.tarih)}<br>
+                    <strong>Eklenme Tarihi:</strong> ${formatDate(menu.eklenmeTarihi)} ${formatTime(menu.eklenmeTarihi)}<br>
+                    <strong>Çorba:</strong> ${menu.corba},
+                    <strong>Ana Yemek:</strong> ${menu.anaYemek},
+                    <strong>Yardımcı Yemek:</strong> ${menu.yardimciYemek},
                     <strong>Ekstra:</strong> ${menu.ekstra}
                 `;
                 yemekListesi.appendChild(listItem);
@@ -208,62 +203,13 @@ async function listeleSonEklenenYemekler() {
         }
     } catch (error) {
         console.error("Son eklenen yemekleri listeleme hatası:", error);
-        document.getElementById("eklenenYemekListesi").innerHTML = "<li>Yemekleri listeleme sırasında hata oluştu.</li>";
+        const yemekListesi = document.getElementById("eklenenYemekListesi");
+        if (yemekListesi) yemekListesi.innerHTML = "<li>Yemekleri listeleme sırasında hata oluştu.</li>";
     }
 }
-document.addEventListener("DOMContentLoaded", () => {
-    listeleSonEklenenYemekler();
-});
+window.listeleSonEklenenYemekler = listeleSonEklenenYemekler;
 
 /* ====================== RASTGELE MENÜ VE FORM DOLDURMA ====================== */
-
-function randomMenulerOlustur(sabitKategori, sabitDeger) {
-    // Kategorilere göre yemek listelerini al
-    const kategoriler = {
-        corbalar: [...document.querySelectorAll(".kategori:nth-child(1) ul li")].map(item => item.textContent),
-        anaYemekler: [...document.querySelectorAll(".kategori:nth-child(2) ul li")].map(item => item.textContent),
-        yardimciYemekler: [...document.querySelectorAll(".kategori:nth-child(3) ul li")].map(item => item.textContent),
-        ekstralar: [...document.querySelectorAll(".kategori:nth-child(4) ul li")].map(item => item.textContent),
-    };
-
-    const sabitMenu = {
-        corba: sabitKategori === "corbalar" ? sabitDeger : kategoriler.corbalar[Math.floor(Math.random() * kategoriler.corbalar.length)],
-        anaYemek: sabitKategori === "anaYemekler" ? sabitDeger : kategoriler.anaYemekler[Math.floor(Math.random() * kategoriler.anaYemekler.length)],
-        yardimciYemek: sabitKategori === "yardimciYemekler" ? sabitDeger : kategoriler.yardimciYemekler[Math.floor(Math.random() * kategoriler.yardimciYemekler.length)],
-        ekstra: sabitKategori === "ekstralar" ? sabitDeger : kategoriler.ekstralar[Math.floor(Math.random() * kategoriler.ekstralar.length)],
-    };
-
-    const randomGramKalori = {
-        corbaGram: Math.floor(Math.random() * 100) + 150,
-        corbaKalori: Math.floor(Math.random() * 50) + 100,
-        anaYemekGram: Math.floor(Math.random() * 150) + 300,
-        anaYemekKalori: Math.floor(Math.random() * 100) + 250,
-        yardimciYemekGram: Math.floor(Math.random() * 50) + 200,
-        yardimciYemekKalori: Math.floor(Math.random() * 50) + 150,
-        ekstraGram: Math.floor(Math.random() * 50) + 100,
-        ekstraKalori: Math.floor(Math.random() * 50) + 100,
-    };
-
-    const oneriListesi = document.getElementById("oneri-listesi");
-    oneriListesi.innerHTML = "";
-    const oneri = document.createElement("div");
-    oneri.className = "random-menu";
-    oneri.innerHTML = `
-        <p><strong>Çorba:</strong> ${sabitMenu.corba} (${randomGramKalori.corbaGram}g, ${randomGramKalori.corbaKalori}kcal)</p>
-        <p><strong>Ana Yemek:</strong> ${sabitMenu.anaYemek} (${randomGramKalori.anaYemekGram}g, ${randomGramKalori.anaYemekKalori}kcal)</p>
-        <p><strong>Yardımcı Yemek:</strong> ${sabitMenu.yardimciYemek} (${randomGramKalori.yardimciYemekGram}g, ${randomGramKalori.yardimciYemekKalori}kcal)</p>
-        <p><strong>Ekstra:</strong> ${sabitMenu.ekstra} (${randomGramKalori.ekstraGram}g, ${randomGramKalori.ekstraKalori}kcal)</p>
-        <button class="menu-sec-btn">Bu Menüyü Seç</button>
-    `;
-    oneriListesi.appendChild(oneri);
-    oneri.querySelector(".menu-sec-btn").addEventListener("click", () => {
-        document.getElementById("corba").value = sabitMenu.corba;
-        document.getElementById("anaYemek").value = sabitMenu.anaYemek;
-        document.getElementById("yardimciYemek").value = sabitMenu.yardimciYemek;
-        document.getElementById("ekstra").value = sabitMenu.ekstra;
-    });
-}
-
 function formatDate(dateString) {
     if (!dateString) return "Tarih belirtilmemiş";
     const date = new Date(dateString);
@@ -274,39 +220,31 @@ function formatTime(dateString) {
     const date = new Date(dateString);
     return date.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
+
 // Menü tarih aralığına göre filtreleme
-document.getElementById("listeleBtn").addEventListener("click", async () => {
+async function filtreliMenuListele() {
     const startDateElement = document.getElementById("startDate");
     const endDateElement = document.getElementById("endDate");
-
     if (!startDateElement || !endDateElement) {
         alert("Bir hata oluştu. Lütfen sayfayı yenileyin ve tekrar deneyin.");
         return;
     }
-
     const startDate = startDateElement.value;
     const endDate = endDateElement.value;
-
     if (!startDate || !endDate) {
         alert("Lütfen başlangıç ve bitiş tarihlerini seçin!");
         return;
     }
-
     try {
         const response = await fetch(`${API_URL}/api/menuler?start_date=${startDate}&end_date=${endDate}`);
         const data = await response.json();
         const menuListesi = document.getElementById("menuListesi");
         menuListesi.innerHTML = "";
-
         if (data.success && data.menuler && data.menuler.length > 0) {
             data.menuler.forEach(menu => {
                 const formattedDate = new Date(menu.tarih).toLocaleDateString("tr-TR", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
+                    weekday: "long", year: "numeric", month: "long", day: "numeric"
                 });
-
                 const div = document.createElement("div");
                 div.className = "menu-item";
                 div.innerHTML = `
@@ -325,25 +263,16 @@ document.getElementById("listeleBtn").addEventListener("click", async () => {
         console.error("Menü listeleme hatası:", error);
         alert("Sunucu hatası! Lütfen tekrar deneyin.");
     }
-});
-
-// Dinamik filtreleme (input ve select) ve filtre temizleme
-document.getElementById("filter-name").addEventListener("input", updateReservations);
-document.getElementById("filter-date").addEventListener("input", updateReservations);
-document.getElementById("filter-meal").addEventListener("change", updateReservations);
-document.getElementById("clear-filters").addEventListener("click", () => {
-    document.getElementById("filter-name").value = "";
-    document.getElementById("filter-date").value = "";
-    document.getElementById("filter-meal").value = "";
-    updateReservations();
-});
+}
+window.filtreliMenuListele = filtreliMenuListele;
 
 // Rezervasyonları dinamik olarak filtrele ve tabloya yaz
 async function updateReservations() {
-    const name = document.getElementById("filter-name").value.trim();
-    const date = document.getElementById("filter-date").value;
-    const meal = document.getElementById("filter-meal").value;
-
+    const name = document.getElementById("filter-name")?.value.trim() || "";
+    const date = document.getElementById("filter-date")?.value || "";
+    const meal = document.getElementById("filter-meal")?.value || "";
+    const tableBody = document.querySelector("#reservation-table tbody");
+    if (!tableBody) return;
     const queryParams = new URLSearchParams();
     if (name) queryParams.append("isim", name);
     if (date) queryParams.append("tarih", date);
@@ -352,18 +281,12 @@ async function updateReservations() {
     try {
         const response = await fetch(`${API_URL}/api/rezervasyonlar?${queryParams.toString()}`);
         const data = await response.json();
-        const tableBody = document.querySelector("#reservation-table tbody");
         tableBody.innerHTML = "";
-
         if (data.success && Array.isArray(data.rezervasyonlar) && data.rezervasyonlar.length > 0) {
             data.rezervasyonlar.forEach((rezervasyon) => {
                 const formattedDate = new Date(rezervasyon.tarih).toLocaleDateString("tr-TR", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
+                    weekday: "long", year: "numeric", month: "long", day: "numeric"
                 });
-
                 const row = document.createElement("tr");
                 row.innerHTML = `
                     <td>${rezervasyon.isim_soyisim || "-"}</td>
@@ -380,16 +303,16 @@ async function updateReservations() {
         }
     } catch (error) {
         console.error("Rezervasyonları listeleme hatası:", error);
-        alert("Sunucu hatası! Lütfen tekrar deneyin.");
+        tableBody.innerHTML = "<tr><td colspan='6'>Sunucu hatası!</td></tr>";
     }
 }
+window.updateReservations = updateReservations;
 
 // Rezervasyon listesini PDF olarak indir
-document.getElementById("download-reservations").addEventListener("click", async () => {
-    const name = document.getElementById("filter-name").value.trim();
-    const date = document.getElementById("filter-date").value;
-    const meal = document.getElementById("filter-meal").value;
-
+async function downloadReservationsPDF() {
+    const name = document.getElementById("filter-name")?.value.trim() || "";
+    const date = document.getElementById("filter-date")?.value || "";
+    const meal = document.getElementById("filter-meal")?.value || "";
     const queryParams = new URLSearchParams();
     if (name) queryParams.append("isim", name);
     if (date) queryParams.append("tarih", date);
@@ -398,7 +321,6 @@ document.getElementById("download-reservations").addEventListener("click", async
     try {
         const response = await fetch(`${API_URL}/api/rezervasyonlar?${queryParams.toString()}`);
         const data = await response.json();
-
         if (data.success && Array.isArray(data.rezervasyonlar) && data.rezervasyonlar.length > 0) {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
@@ -411,10 +333,7 @@ document.getElementById("download-reservations").addEventListener("click", async
             const rows = data.rezervasyonlar.map((rezervasyon) => [
                 rezervasyon.isim_soyisim || "-",
                 new Date(rezervasyon.tarih).toLocaleDateString("tr-TR", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
+                    weekday: "long", year: "numeric", month: "long", day: "numeric"
                 }),
                 rezervasyon.ogun || "-",
                 rezervasyon.email || "-",
@@ -435,46 +354,53 @@ document.getElementById("download-reservations").addEventListener("click", async
         console.error("PDF indirme hatası:", error);
         alert("PDF indirirken bir hata oluştu!");
     }
-});
+}
+window.downloadReservationsPDF = downloadReservationsPDF;
 
 /* ========== Kullanıcı Yönetimi ========== */
 
-// Kullanıcı ekle
-document.getElementById("add-user-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const name = document.getElementById("user-name").value.trim();
-    const email = document.getElementById("user-email").value.trim();
-    const password = document.getElementById("user-password").value.trim();
-    const role = document.getElementById("user-role").value;
-    if (!name || !email || !password || !role) {
-        alert("Lütfen tüm alanları doldurun!");
-        return;
-    }
 
-    try {
-        const response = await fetch(`${API_URL}/api/kullanici-ekle`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                ad: name.split(" ")[0],
-                soyad: name.split(" ")[1] || "",
-                email,
-                sifre: password,
-                rol: role,
-            }),
-        });
-        const result = await response.json();
-        if (result.success) {
-            alert(result.message);
-            loadUserList();
-        } else {
-            alert(result.message);
+
+// Kullanıcı ekle
+const addUserForm = document.getElementById("add-user-form");
+if (addUserForm) {
+    addUserForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const name = document.getElementById("user-name").value.trim();
+        const email = document.getElementById("user-email").value.trim();
+        const password = document.getElementById("user-password").value.trim();
+        const role = document.getElementById("user-role").value;
+        if (!name || !email || !password || !role) {
+            alert("Lütfen tüm alanları doldurun!");
+            return;
         }
-    } catch (error) {
-        console.error("Kullanıcı ekleme hatası:", error);
-        alert("Sunucu hatası! Lütfen tekrar deneyin.");
-    }
-});
+
+        try {
+            const response = await fetch(`${API_URL}/api/kullanici-ekle`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    ad: name.split(" ")[0],
+                    soyad: name.split(" ")[1] || "",
+                    email,
+                    sifre: password,
+                    rol: role,
+                }),
+            });
+            const result = await response.json();
+            if (result.success) {
+                alert(result.message);
+                loadUserList();
+                addUserForm.reset();
+            } else {
+                alert(result.message);
+            }
+        } catch (error) {
+            console.error("Kullanıcı ekleme hatası:", error);
+            alert("Sunucu hatası! Lütfen tekrar deneyin.");
+        }
+    });
+}
 
 // Kullanıcıları tabloya yükle
 function loadUserList() {
@@ -483,6 +409,7 @@ function loadUserList() {
         .then((data) => {
             if (data.success && Array.isArray(data.users)) {
                 const tableBody = document.querySelector("#user-table tbody");
+                if (!tableBody) return;
                 tableBody.innerHTML = "";
                 data.users.forEach((user) => {
                     const row = document.createElement("tr");
@@ -526,9 +453,10 @@ window.deleteUser = async function(userId) {
 
 // Yorum sil fonksiyonu
 window.silYorum = async function(id) {
-    const email = "admin@example.com"; // Gerçek admin oturumundan alınmalı!
+    // Gerçek admin oturumu varsa localStorage'dan çekersin, yoksa örnek eposta kullan
+    const email = localStorage.getItem("email") || "admin@example.com";
     try {
-        const response = await fetch(`/api/yorum-sil/${id}`, {
+        const response = await fetch(`${API_URL}/api/yorum-sil/${id}`, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
@@ -542,54 +470,61 @@ window.silYorum = async function(id) {
         }
     } catch (error) {
         console.error('Yorum silme hatası:', error);
+        alert("Yorum silerken hata oluştu.");
     }
 };
 
 // Yorum ekle
-document.getElementById('comment-form').addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const name = document.getElementById('name').value;
-    const email = document.getElementById('email').value;
-    const comment = document.getElementById('comment').value;
-    try {
-        const response = await fetch('/api/yorum-ekle', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ isim: name, eposta: email, yorum: comment }),
-        });
-        const result = await response.json();
-        if (result.success) {
-            alert('Yorum başarıyla eklendi!');
-            loadComments();
-            document.getElementById('comment-form').reset();
-        } else {
-            alert(result.message || "Yorum eklenemedi.");
+const commentForm = document.getElementById('comment-form');
+if (commentForm) {
+    commentForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const comment = document.getElementById('comment').value;
+        try {
+            const response = await fetch(`${API_URL}/api/yorum-ekle`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isim: name, eposta: email, yorum: comment }),
+            });
+            const result = await response.json();
+            if (result.success) {
+                alert('Yorum başarıyla eklendi!');
+                loadComments();
+                commentForm.reset();
+            } else {
+                alert(result.message || "Yorum eklenemedi.");
+            }
+        } catch (error) {
+            console.error("Yorum ekleme sırasında hata:", error);
+            alert("Yorum eklenirken bir hata oluştu.");
         }
-    } catch (error) {
-        console.error("Yorum ekleme sırasında hata:", error);
-        alert("Yorum eklenirken bir hata oluştu.");
-    }
-});
+    });
+}
 
 // Yorumları yükle
 async function loadComments() {
     try {
-        const response = await fetch('/api/yorumlar');
+        const response = await fetch(`${API_URL}/api/yorumlar`);
         const result = await response.json();
         const commentList = document.getElementById('comment-list');
+        if (!commentList) return;
         commentList.innerHTML = '';
         if (result.success && Array.isArray(result.yorumlar)) {
             result.yorumlar.forEach((yorum) => {
                 const listItem = document.createElement('div');
                 listItem.classList.add('comment-item');
-                const formattedDate = new Date(yorum.tarih).toLocaleString("tr-TR", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                });
+                const formattedDate = yorum.tarih
+                    ? new Date(yorum.tarih).toLocaleString("tr-TR", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                    })
+                    : "";
                 listItem.innerHTML = `
                     <p><strong>${yorum.isim}</strong> (${yorum.eposta}):</p>
                     <p>${yorum.yorum}</p>
@@ -604,8 +539,8 @@ async function loadComments() {
         }
     } catch (error) {
         console.error('Yorumları yüklerken hata:', error);
-        document.getElementById('comment-list').innerHTML = '<p>Yorumları yüklerken bir hata oluştu.</p>';
+        const commentList = document.getElementById('comment-list');
+        if (commentList) commentList.innerHTML = '<p>Yorumları yüklerken bir hata oluştu.</p>';
     }
 }
 document.addEventListener('DOMContentLoaded', loadComments);
-
