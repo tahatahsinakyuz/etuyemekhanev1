@@ -252,9 +252,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadComments();
 });
 
-function navigateTo(url) {
-    window.location.href = url;
-}
+
 function navigateTo(url) {
     window.location.href = url;
 }
